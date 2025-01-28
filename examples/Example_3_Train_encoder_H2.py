@@ -15,7 +15,7 @@ from Ansatz import TwoLocalU3
 import time
 from qiskit.primitives import Estimator, StatevectorEstimator
 
-ELEMENTS=["Li", "H"]
+ELEMENTS=["H", "H"]
 
 start = time.time()
 
