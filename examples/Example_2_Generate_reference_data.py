@@ -20,7 +20,7 @@ from Utils import store
 
 if __name__ == "__main__":
     NUM_STATES = 6
-    ELEMENTS = ["Li", "H"]
+    ELEMENTS = ["H", "H"]
     TEST_POINTS = list(np.arange(0.2, 3.2, 2.8 / (NUM_STATES-1)))
     SAVE_FILE = "../data/Energies_{}_{}.json".format(*ELEMENTS)
     
