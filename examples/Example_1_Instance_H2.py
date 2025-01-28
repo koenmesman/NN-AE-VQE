@@ -13,7 +13,7 @@ sys.path.append(lib_path)
 
 from ChemInstance import Instance
 
-inst = Instance(["Li", "H"], ansatz="exact")
+inst = Instance(["H", "H"], ansatz="exact")
 test = inst.run(1)
 
 print("exact diagonailization : {} Hartree".format(test))
