@@ -36,13 +36,17 @@ def run_pub(param, circ, obs, estimator):
 class Instance:
     def __init__(self, elements, mapping="JW", method="UCCSD", ansatz=None, freeze=[]):
         self.elements = elements
-        self._set_mapper(mapping)
+        self.atoms = "{} 0 0 0; {} 0 0 {}".format(*self.elements, 1)
+
         self.freeze = freeze
         self.method = method
         self.ansatz=ansatz
+        self._set_driver(self.atoms)
+
         self._num_qubits = None
+        self._set_mapper(mapping)
         self.est = Estimator
-        self.backend_flag = False
+        self.backend_flag = False        
 
     def _set_driver(self, atoms):
         self._driver = PySCFDriver(
@@ -66,8 +70,9 @@ class Instance:
 
             # TODO: this should be more efficient
 
-            atoms = "{} 0 0 0; {} 0 0 {}".format(*self.elements, 1)
-            self._set_driver(atoms)
+            #atoms = "{} 0 0 0; {} 0 0 {}".format(*self.elements, 1)
+            #self._set_driver(atoms)
+
             self.ansatz = UCCSD(
                 self.problem.num_spatial_orbitals,
                 self.problem.num_particles,
@@ -81,11 +86,18 @@ class Instance:
             self._num_qubits = self.ansatz.num_qubits
         return self._num_qubits
 
+    def set_hamiltonian(self, point):
+        atoms = "{} 0 0 0; {} 0 0 {}".format(*self.elements, point)
+        self._set_driver(atoms)
+        second_q_op = self.problem.hamiltonian.second_q_op()
+        self.hamiltonian = self.mapper.map(second_q_op)
+        self.repulsion = self.problem.nuclear_repulsion_energy
+
     def _set_mapper(self, mapping):
         self.mapper = {
             "JW": JordanWignerMapper(),
             "BK": BravyiKitaevSuperFastMapper(),
-            "parity": ParityMapper(),
+            "parity": ParityMapper(self.problem.num_particles),
         }[mapping]
 
     def run(self, point, init_parameters=[], parallel=1):
@@ -217,5 +229,8 @@ class Instance:
         second_q_op = self.problem.hamiltonian.second_q_op()
         self.hamiltonian = self.mapper.map(second_q_op)
         self. parameters = parameters
+
         self.bound_vqe = self.ansatz.assign_parameters(parameters)
+
+
         
