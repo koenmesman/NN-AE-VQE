@@ -42,7 +42,7 @@ class Instance:
         self.ansatz=ansatz
         self._num_qubits = None
         self.est = Estimator
-        self.backend_flag = False
+        self.backend_flag = True
 
     def _set_driver(self, atoms):
         self._driver = PySCFDriver(
@@ -59,6 +59,7 @@ class Instance:
             ).transform(properties)
         else:
             self.problem = self._driver.run()
+        print(self.problem)
 
     @property
     def num_qubits(self):
@@ -124,7 +125,7 @@ class Instance:
             estimator = self.est()
         self.vqe = VQE(ansatz=self.ansatz, estimator=estimator, optimizer=SLSQP())
         
-        if not init_parameters:
+        if not init_parameters:_set_estimator
             init_parameters = [
                 random.random() * np.pi for i in range(self.ansatz.num_parameters)
             ]
@@ -207,6 +208,7 @@ class Instance:
     def run_exact(self, init_parameters):
         numpy_solver = NumPyMinimumEigensolver()
         calc = GroundStateEigensolver(self.mapper, numpy_solver)
+        print(self.problem)
         self._result = calc.solve(self.problem)
         print(self._result._computed_energies[0])
         return self._result._computed_energies[0]
