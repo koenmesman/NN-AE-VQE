@@ -14,6 +14,9 @@ from qiskit_nature.second_q.mappers import (
 )
 from qiskit_algorithms import VQE, NumPyMinimumEigensolver
 from qiskit_nature.second_q.algorithms import GroundStateEigensolver
+
+from qiskit.primitives import Estimator, StatevectorEstimator
+
 #from qiskit_nature.converters.second_quantization import QubitConverter
 
 atom = "H 0 0 0; H 0 0 1"
@@ -22,5 +25,6 @@ vqe = VQEExtended()
 result = vqe.run_exact(atom)
 print(result)
 
-result = vqe.run(atom)
+estimator = StatevectorEstimator()
+result = vqe.run(atom, estimator=estimator)
 print(result)

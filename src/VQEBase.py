@@ -1,75 +1,73 @@
 # -*- coding: utf-8 -*-
+from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
+from qiskit_nature.second_q.algorithms import GroundStateEigensolver
+from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.units import DistanceUnit
 from qiskit_algorithms import VQE, NumPyMinimumEigensolver
-from qiskit import QuantumCircuit
-from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit_algorithms.optimizers import COBYLA
-from qiskit_nature.second_q.circuit.library import HartreeFock, UCCSD
-from qiskit_nature.second_q.algorithms import GroundStateEigensolver
+from qiskit.primitives import BaseEstimatorV2
+from qiskit import QuantumCircuit
 import random
 import numpy as np
-from qiskit_aer.primitives import Estimator
-from qiskit.ibmruntime import IBMBackend
+
 
 class AtomDriver(PySCFDriver):
     """
     A driver to set up a single atom (or multiple atoms) via PySCFDriver,
-    designed as a subclass template under Qiskit Nature 2.1.1.
+    designed as a subclass template under Qiskit Nature 1.4.3.
     """
 
-    def __init__(
-        self,
-        atom: str = "H",
-        charge: int = 0,
-        spin: int = 0,
-        basis: str = "sto3g",
-        unit: str = DistanceUnit.ANGSTROM,
-    ):
+    def __init__(self,
+                 atom: str = "H",
+                 charge: int = 0,
+                 spin: int = 0,
+                 basis: str = "sto3g",
+                 unit: str = DistanceUnit.ANGSTROM):
         """
         Build an AtomDriver for one or more atoms.
 
         Args:
-            atom_symbol: e.g. "H", "He", or "O" etc. If multiple atoms, 
-                         supply as string "H 0 0 0; O 0 0 1.0" etc.
-            charge: integer molecular charge
-            spin: total spin multiplicity (2S = multiplicity - 1)
-            basis: basis set name, default "sto3g"
-            unit: PySCF unit system (e.g. units.Angstrom or units.Bohr)
+            atom: Molecule definition string (e.g., "H 0 0 0; O 0 0 1.0").
+            charge: Integer molecular charge.
+            spin: Total spin multiplicity (2S = multiplicity - 1).
+            basis: Basis set name, default "sto3g".
+            unit: Distance units (e.g., ANGSTROM or BOHR).
         """
         super().__init__(atom, charge=charge, spin=spin, basis=basis, unit=unit)
 
-
-    def freeze_orbitals(self, orbitals=None):
-        properties = self.run()
-        self.problem = FreezeCoreTransformer(
-                freeze_core=True, remove_orbitals=orbitals
-            ).transform(properties)
-
     def run(self):
         """
-        Executes calculation and returns ElectronicStructureDriverResult.
-        Feel free to override this to inject pre/post processing.
+        Executes calculation and stores the problem.
         """
         result = super().run()
-        print(result)
-
         self.problem = result
-        # You can manipulate or annotate result here before returning
         return result
 
 
-class VQEExtended():
+class VQEExtended:
+    """
+    Wrapper class for running VQE and exact diagonalization for molecular problems.
+    """
+
     def __init__(self,
-        ansatz:QuantumCircuit = None,
-        mapper = JordanWignerMapper(),
-        shots: int = 100,
-        ):
+                 ansatz: QuantumCircuit = None,
+                 mapper=JordanWignerMapper(),
+                 shots: int = 1024):
         self.mapper = mapper
         self.ansatz = ansatz
+        self.shots = shots
+        self.vqe = None
+        self.hamiltonian = None
+        self.num_qubits = None
 
-    def _set_UCCSD(self, atom):
-        ansatz = UCCSD(
+    # -------------------------------
+    # Helper methods
+    # -------------------------------
+
+    def _build_uccsd_ansatz(self, atom):
+        """Construct a default UCCSD ansatz."""
+        return UCCSD(
             atom.problem.num_spatial_orbitals,
             atom.problem.num_particles,
             self.mapper,
@@ -80,52 +78,68 @@ class VQEExtended():
             ),
         )
 
-        return ansatz
-
-    def _set_estimator(self, estimator, backend_options: dict = {}, optimizer=COBYLA()):
-        self.vqe = VQE(ansatz=self.ansatz, estimator=estimator, optimizer=optimizer)
-
-    def _set_backend(self, backend, backend_options: dict = {}, optimizer=COBYLA()):
-        estimator = BackendEstimator(backend = backend)
-        self.vqe = VQE(ansatz=self.ansatz, estimator=estimator, optimizer=optimizer)
-
     def _set_atom(self, atom_config):
+        """Prepare the molecular problem and ansatz."""
         atom = AtomDriver(atom_config)
         atom.run()
         second_q_op = atom.problem.hamiltonian.second_q_op()
-        if self.ansatz==None:
-            self.ansatz=self._set_UCCSD(atom)
-        
+
+        if self.ansatz is None:
+            self.ansatz = self._build_uccsd_ansatz(atom)
+
         self.num_qubits = self.ansatz.num_qubits
         self.hamiltonian = self.mapper.map(second_q_op)
         return atom
 
-    def run_exact(self, atom_config: str = "H 0 0 0; H 0 0 0.5", init_parameters=None):
+    def _init_parameters(self):
+        """Generate random initial parameters."""
+        return [random.random() * np.pi for _ in range(self.ansatz.num_parameters)]
+
+    # -------------------------------
+    # Main execution methods
+    # -------------------------------
+
+    def run_exact(self, atom_config: str = "H 0 0 0; H 0 0 0.5"):
+        """Perform exact diagonalization using a classical eigensolver."""
         atom = self._set_atom(atom_config)
+        solver = NumPyMinimumEigensolver()
+        calc = GroundStateEigensolver(self.mapper, solver)
+        result = calc.solve(atom.problem)
+        return result.groundenergy
 
-        numpy_solver = NumPyMinimumEigensolver()
-        calc = GroundStateEigensolver(self.mapper, numpy_solver)
+    def run(self,
+            atom_config: str,
+            estimator: BaseEstimatorV2,
+            backend_options: dict = None,
+            init_parameters=None,
+            optimizer=COBYLA()):
+        """
+        Run VQE with either a custom ansatz or default UCCSD.
 
-        self._result = calc.solve(atom.problem)
-        return self._result._computed_energies[0]
+        Args:
+            atom_config: Molecule specification string.
+            backend: Quantum backend (e.g., AerSimulator or IBMQ backend).
+            backend_options: Optional dict for QuantumInstance settings.
+            init_parameters: Optional list of initial ansatz parameters.
+            optimizer: Classical optimizer (default: COBYLA).
+        """
+        self._set_atom(atom_config)
 
-    def run(self, atom_config:str, backend = Estimator(), init_parameters=None, optimizer=COBYLA()):
-        atom = self._set_atom(atom_config)
-        
-        #Todo check backend types
-        if isinstance(backend, Estimator):
-            self._set_estimator(backend, optimizer=optimizer)
-        if isinstance(backend, IBMBackend):
-                self._set_estimator(backend, optimizer=optimizer)
+        # Setup VQE
+        self.vqe = VQE(ansatz=self.ansatz, optimizer=optimizer, estimator=estimator)
 
-
+        # Initialize parameters
         if not init_parameters:
-            init_parameters = [
-                random.random() * np.pi for i in range(self.ansatz.num_parameters)
-            ]
+            init_parameters = self._init_parameters()
         self.vqe.initial_point = init_parameters
+
+        # Compute result
         vqe_result = self.vqe.compute_minimum_eigenvalue(self.hamiltonian)
-        parameters = vqe_result.optimal_parameters.values()
+        parameters = list(vqe_result.optimal_parameters.values())
         bound_vqe = self.vqe.ansatz.assign_parameters(parameters)
 
-        return {"energies":vqe_result.optimal_value, "parameters":parameters, "ansatz":bound_vqe} #Todo validate value
+        return {
+            "energy": vqe_result.optimal_value,
+            "parameters": parameters,
+            "ansatz": bound_vqe
+        }
