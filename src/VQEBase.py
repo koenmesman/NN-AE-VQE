@@ -140,6 +140,16 @@ class VQEExtended:
 
         return {
             "energy": vqe_result.optimal_value,
-            "parameters": parameters,
-            "ansatz": bound_vqe
+            "parameters": parameters
         }
+
+    def assign_parameters(self, atom_config, parameters):
+        self._set_atom(atom_config)
+
+        if isinstance(self.ansatz, UCCSD):
+            qc = QuantumCircuit(self.ansatz.num_qubits)
+            qc.append(self.ansatz.initial_state, range(0, self.ansatz.num_qubits))
+            qc.append(self.ansatz.assign_parameters(parameters), range(0, self.ansatz.num_qubits))
+            return qc
+        else:
+            return self.ansatz.assign_parameters(parameters)
