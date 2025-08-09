@@ -24,12 +24,12 @@ ref_file = "../data/vqe_data_HH.json"
 base = 4
 target = 3
 compression = "{}_{}".format(base, target)
+qae_data = load(qae_file)[compression]
 
 # Find best QAE setup
-qae_data = load(qae_file)[compression]
 acc = [d["accuracy"] for d in qae_data]
-print("QAE error :", min(acc))
 qae_parameters = qae_data[acc.index(min(acc))]["parameters"]
+print("QAE error :", min(acc))
 
 # Load reference data
 validation_data = load(ref_file)
@@ -47,29 +47,27 @@ encoder = ansatz.assign_parameters(qae_parameters)
 # Generate energies with QAE encoding
 E_QAE = []
 E_repulsion = []
-qubits = 4
 estimator = Estimator()
 
 for p, vqe_param in zip(configs, vqe_parameters):
     vqe = VQEExtended()
     vqe_state = vqe.assign_parameters(p, vqe_param)
 
-    qc = QuantumCircuit(qubits)
-    qc.append(vqe_state, range(qubits)) # VQE
-    qc.append(encoder, range(qubits))
-    qc.reset(range(qubits)[target:])
-    qc.append(encoder.inverse(), range(qubits))
-    ansatz=qc
+    # Encode and decode reference VQE state
+    qc = QuantumCircuit(base)
+    qc.append(vqe_state, range(base))
+    qc.append(encoder, range(base))
+    qc.reset(range(base)[target:])
+    qc.append(encoder.inverse(), range(base))
     
+    # Run estimation
     H = vqe.hamiltonian
+    est = estimator.run([qc], [H]).result()
+
     E_repulsion.append(vqe.atom.problem.nuclear_repulsion_energy)
-    est = estimator.run([ansatz], [H]).result()
-    vqe_e = estimator.run([vqe_state], [H]).result().values[0]
-
-
     E_QAE.append(est.values[0])
 
-# Add repultion energies
+# Add repulsion energies
 E_QAE = [e+r for e, r in zip(E_QAE, E_repulsion)]
 vqe_energies = [e+r for e, r in zip(vqe_energies, E_repulsion)]
 
@@ -83,7 +81,7 @@ plt.plot(points, vqe_energies, '.', label="vqe reference")
 plt.ylabel("Energy (Hartree)")
 plt.xlabel("Atomic distance (Angstrom)")
 plt.legend()
-plt.savefig("QAE_validation_HH_{}_{}.png".format(base, target))
+plt.savefig("../data/QAE_validation_HH_{}_{}.png".format(base, target))
 plt.show()
 
 # Plot errors
@@ -93,4 +91,4 @@ plt.ylabel("Energy (Hartree)")
 plt.xlabel("Atomic distance (Angstrom)")
 plt.yscale("log")
 plt.legend()
-plt.savefig("QAE_validation_HH_{}_{}_abs_error.png".format(base, target))
+plt.savefig("../data/QAE_validation_HH_{}_{}_abs_error.png".format(base, target))
