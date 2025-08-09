@@ -83,7 +83,7 @@ class QAE():
     def _cost_trace(self, parameters):
         results=[]
         for state in self.states:
-            bound_evolve = self.evolution.assign_parameters(parameters)   
+            bound_evolve = self.evolution.assign_parameters(parameters)
             new_state = state.evolve(bound_evolve)
             state = partial_trace(new_state, range(0, self.base))
             fidelity = state_fidelity(self.ref_state, state)
@@ -92,7 +92,7 @@ class QAE():
 
     def train(self, reference_data:str, reference_type:str="VQE-UCCSD", num_samples = 2,
      sample_method='linear', initial_parameters=None, method:str="trace",
-     optimizer:str="SLSQP", tol=1e-2, max_iter=1000):
+     optimizer:str="SLSQP", tol=1e-2, max_iter=5000):
 
         self._set_reference_states(reference_data, reference_type, num_samples, sample_method)
         self._set_states()

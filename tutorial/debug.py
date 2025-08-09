@@ -1,10 +1,3 @@
-lst = []
-
-a = 0.5
-b = [1, 2, 3]
-
-lst.append(b)
-print(lst)
-
-lst.append(b)
-print(lst)
+a = 2
+b = 4
+print(list(range(4))[a:])

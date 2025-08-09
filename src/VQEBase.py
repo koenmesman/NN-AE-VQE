@@ -80,16 +80,15 @@ class VQEExtended:
 
     def _set_atom(self, atom_config):
         """Prepare the molecular problem and ansatz."""
-        atom = AtomDriver(atom_config)
-        atom.run()
-        second_q_op = atom.problem.hamiltonian.second_q_op()
+        self.atom = AtomDriver(atom_config)
+        self.atom.run()
+        second_q_op = self.atom.problem.hamiltonian.second_q_op()
 
         if self.ansatz is None:
-            self.ansatz = self._build_uccsd_ansatz(atom)
+            self.ansatz = self._build_uccsd_ansatz(self.atom)
 
         self.num_qubits = self.ansatz.num_qubits
         self.hamiltonian = self.mapper.map(second_q_op)
-        return atom
 
     def _init_parameters(self):
         """Generate random initial parameters."""
@@ -101,10 +100,10 @@ class VQEExtended:
 
     def run_exact(self, atom_config: str = "H 0 0 0; H 0 0 0.5"):
         """Perform exact diagonalization using a classical eigensolver."""
-        atom = self._set_atom(atom_config)
+        self._set_atom(atom_config)
         solver = NumPyMinimumEigensolver()
         calc = GroundStateEigensolver(self.mapper, solver)
-        result = calc.solve(atom.problem)
+        result = calc.solve(self.atom.problem)
         return result.groundenergy
 
     def run(self,
@@ -136,7 +135,7 @@ class VQEExtended:
         # Compute result
         vqe_result = self.vqe.compute_minimum_eigenvalue(self.hamiltonian)
         parameters = list(vqe_result.optimal_parameters.values())
-        bound_vqe = self.vqe.ansatz.assign_parameters(parameters)
+        self.bound_vqe = self.vqe.ansatz.assign_parameters(parameters)
 
         return {
             "energy": vqe_result.optimal_value,
@@ -148,7 +147,7 @@ class VQEExtended:
 
         if isinstance(self.ansatz, UCCSD):
             qc = QuantumCircuit(self.ansatz.num_qubits)
-            qc.append(self.ansatz.initial_state, range(0, self.ansatz.num_qubits))
+            #qc.append(self.ansatz.initial_state, range(0, self.ansatz.num_qubits))
             qc.append(self.ansatz.assign_parameters(parameters), range(0, self.ansatz.num_qubits))
             return qc
         else:

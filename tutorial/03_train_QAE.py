@@ -9,7 +9,7 @@ from Utils import store_qae
 
 file = "../data/QAE_HH.json"
 
-ansatz = efficient_su2(4, reps=1)
+ansatz = efficient_su2(4, reps=3)
 
 qae = QAE(ansatz, 4, 2)
 res = qae.train("../data/vqe_data_HH.json", num_samples=6, tol=1e-10)
