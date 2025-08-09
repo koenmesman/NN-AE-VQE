@@ -41,7 +41,7 @@ vqe_energies = validation_data['VQE-UCCSD']['energy']
 vqe_parameters = validation_data['VQE-UCCSD']['parameters']
 
 # Set encoder circuit
-ansatz = efficient_su2(4, reps=1)
+ansatz = efficient_su2(base, reps=1)
 encoder = ansatz.assign_parameters(qae_parameters)
 
 # Generate energies with QAE encoding
