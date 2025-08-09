@@ -11,12 +11,15 @@ from VQEBase import VQEExtended
 
 
 # Data
-vqe_file = "../data/aevqe_data_HH.json"
+ref_file = "../data/vqe_data_HH.json"
+vqe_file = "../data/aevqe_data_HH_parallel_test.json"
 qae_file = "../data/QAE_HH.json"
 base = 4
 target = 3
 compression = "{}_{}".format(base, target)
 qae_data = load(qae_file)[compression]
+ref_data = load(ref_file)["VQE-UCCSD"]
+
 
 # Find best QAE setup
 acc = [d["accuracy"] for d in qae_data]
@@ -37,10 +40,16 @@ estimator = StatevectorEstimator()
 
 num_points = 100
 
-# Should take about 1-2 minutes.
-atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
-result = vqe.run_parallel(atoms, estimator=estimator)
+# Get best previous parameters as new initial parameters
+old_results = load(vqe_file)[compression][f"EfficientSU2-{reps}"][0]
+errors = [abs(ae - ref) for ae, ref in zip(old_results["energy"], ref_data["energy"])]
+init_parameters = old_results["parameters"][errors.index(min(errors))]
 
-data = {compression:{"EfficientSU2-{}".format(reps):{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
+
+# Run computations with mp, Should take about 1-2 minutes.
+atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
+result = vqe.run_parallel(atoms, estimator=estimator, init_parameters=init_parameters)
+
+data = {compression:{f"EfficientSU2-{reps}-init":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
 
 store_vqe(vqe_file, data)

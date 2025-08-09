@@ -9,14 +9,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"
 
 from QAE import QAE
 from VQEBase import VQEExtended
-from Utils import load
+from Utils import load, get_distance
 
 
-# get distance from config
-def to_distance(config:str):
-    "find 6th number in config and return as float"
-    dist = re.findall("[0-9]|\.", config)
-    return float("".join(dist[5:]))
 
 # Data
 qae_file = "../data/QAE_HH.json"

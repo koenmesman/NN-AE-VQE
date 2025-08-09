@@ -8,6 +8,7 @@ from qiskit_algorithms import VQE, NumPyMinimumEigensolver
 from qiskit_algorithms.optimizers import COBYLA
 from qiskit.primitives import BaseEstimatorV2
 from qiskit import QuantumCircuit
+from multiprocessing import Pool
 import random
 import numpy as np
 
@@ -89,6 +90,7 @@ class VQEExtended:
 
         self.num_qubits = self.ansatz.num_qubits
         self.hamiltonian = self.mapper.map(second_q_op)
+        return self.atom, self.hamiltonian, self.ansatz
 
     def _init_parameters(self):
         """Generate random initial parameters."""
@@ -141,6 +143,64 @@ class VQEExtended:
             "energy": vqe_result.optimal_value,
             "parameters": parameters
         }
+
+    def _single_vqe(self, atom_config):
+        atom, hamiltonian, ansatz = self._set_atom(atom_config)
+
+        # Setup VQE
+        _vqe = VQE(ansatz=ansatz, optimizer=self.optimizer, estimator=self.estimator)
+
+        # Initialize parameters
+        if not self.init_parameters:
+            init_parameters = self._init_parameters()
+        else:
+            init_parameters = self.init_parameters
+        _vqe.initial_point = init_parameters
+
+        # Compute result
+        vqe_result = _vqe.compute_minimum_eigenvalue(hamiltonian)
+        parameters = list(vqe_result.optimal_parameters.values())
+
+        return vqe_result.optimal_value, parameters
+
+    def run_parallel(self,
+                atom_configs: list[str],
+                estimator: BaseEstimatorV2,
+                backend_options: dict = None,
+                init_parameters=None,
+                optimizer=COBYLA()):
+            """
+            Run VQE with either a custom ansatz or default UCCSD.
+
+            Args:
+                atom_config: Molecule specification string.
+                backend: Quantum backend (e.g., AerSimulator or IBMQ backend).
+                backend_options: Optional dict for QuantumInstance settings.
+                init_parameters: Optional list of initial ansatz parameters.
+                optimizer: Classical optimizer (default: COBYLA).
+            """
+
+            # Compute configs in parallel
+
+            self.optimizer = optimizer
+            self.estimator = estimator
+            self.init_parameters = init_parameters
+
+            with Pool() as pool:
+                results = pool.map(self._single_vqe, atom_configs)
+
+            # Aggregate into lists
+            energies = []
+            parameters_list = []
+
+            for energy, params in results:
+                energies.append(energy)
+                parameters_list.append(params)
+
+            return {
+                "energy": energies,
+                "parameters": parameters_list
+            }
 
     def assign_parameters(self, atom_config, parameters):
         self._set_atom(atom_config)

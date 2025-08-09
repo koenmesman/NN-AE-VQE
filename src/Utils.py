@@ -3,7 +3,7 @@
 
 import numpy as np
 import json
-
+import re
 """
 def store(filename, data):
     try:
@@ -48,6 +48,7 @@ def store_vqe(filename, data):
                 for k in data[result_type].keys():
                     if k in filedata[result_type]:
                         filedata[result_type][k].append(data[result_type][k])
+                    else: filedata[result_type][k] = data[result_type][k]
             
             file.seek(0)
             json.dump(filedata, file)
@@ -57,7 +58,10 @@ def store_vqe(filename, data):
             with open(filename, "w") as file:
                 result_type = list(data.keys())[0]
                 for k in data[result_type].keys():
-                    data[result_type][k] = [data[result_type][k]]
+                    if type(k) is not dict:
+                        data[result_type][k] = [data[result_type][k]]
+                    else: 
+                        data[result_type][k] = data[result_type][k]
                 json.dump(data, file)
 
 
@@ -99,3 +103,8 @@ def load(filename):
 
 def rmse(errors):
     return np.sqrt(np.square(errors).mean())
+
+def to_distance(config:str):
+    "find 6th number in config and return as float"
+    dist = re.findall("[0-9]|\.", config)
+    return float("".join(dist[5:]))
