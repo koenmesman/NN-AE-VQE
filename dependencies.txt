@@ -1,4 +1,4 @@
-qiskit==2.1.1
+qiskit==1.4.3
 qiskit-nature-0.7.2
 qiskit-nature-pyscf==0.4.0
 qiskit-algorithms==0.3.1
