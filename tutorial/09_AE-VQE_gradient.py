@@ -1,25 +1,22 @@
 from qiskit.primitives import Estimator, StatevectorEstimator
-from qiskit.circuit.library import efficient_su2, TwoLocal
+from qiskit.circuit.library import efficient_su2
 from qiskit import QuantumCircuit
 import numpy as np
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
+import __init__
 from Utils import store_vqe, load
 from VQEBase import VQEExtended
-from Gates import U3TwoQubit, UniversalTwoQubit
-from qiskit_algorithms.optimizers import L_BFGS_B
+
 
 # Data
-ref_file = "../data/vqe_data_HH_tests.json"
-vqe_file = "../data/aevqe_data_HH_tests.json"
+ref_file = "../data/vqe_data_HH.json"
+vqe_file = "../data/aevqe_data_HH.json"
 qae_file = "../data/QAE_HH.json"
 base = 4
 target = 3
 compression = "{}_{}".format(base, target)
 qae_data = load(qae_file)[compression]
-ref_data = load(ref_file)["exact"]
+ref_data = load(ref_file)["VQE-UCCSD"]
 
 
 # Find best QAE setup
@@ -28,13 +25,9 @@ qae_parameters = qae_data[acc.index(min(acc))]["parameters"]
 print("QAE error :", min(acc))
 
 # Define ae-vqe ansatz
-reps = 1
-
-
-
+reps = 3
 encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
-VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks="u",
-entanglement_blocks=U3TwoQubit(), entanglement='circular', reps=reps, name="TwoLocalU3")
+VQE_ansatz = efficient_su2(target, reps=reps)
 
 ansatz = QuantumCircuit(base)
 ansatz.append(VQE_ansatz, range(target))
@@ -43,18 +36,25 @@ ansatz.append(encoder.inverse(), range(base))
 vqe = VQEExtended(ansatz=ansatz)
 estimator = StatevectorEstimator()
 
-num_points = 500
+num_points = 100
 
 # Get best previous parameters as new initial parameters
-old_results = load(vqe_file)[compression][f"TwoLocalU3-{reps}"][0]
+old_results = load(vqe_file)[compression][f"EfficientSU2-{reps}"][0]
 errors = [abs(ae - ref) for ae, ref in zip(old_results["energy"], ref_data["energy"])]
 init_parameters = old_results["parameters"][errors.index(min(errors))]
 
+"""
+Make sure β>0 allowing divergence in case the gradient is 0. Set α>0 for dynamic bound update.
+Might be wise to design α depending on the number of points, e.g., 5/num_points.
+Low divergence allows for closer matched parameters, but can constrain solution quality.
+"""
+alpha=10/num_points
+beta=0.2
 
-# Run computations with mp, Should take about 1-2 minutes.
+# Run computations with dynamic optimizer bound update, Should take about 5-6 minutes.
 atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
-result = vqe.run_parallel(atoms, estimator=estimator, init_parameters=init_parameters, optimizer=L_BFGS_B())
+result = vqe.run_constrained(atoms, alpha=alpha, beta=beta, estimator=estimator, init_parameters=None)
 
-data = {compression:{f"TwoLocalU3-{reps}-init":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
+data = {compression:{f"EfficientSU2-{reps}-grad":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
 
 store_vqe(vqe_file, data)

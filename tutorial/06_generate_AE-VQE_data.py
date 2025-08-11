@@ -1,5 +1,5 @@
 from qiskit.primitives import Estimator, StatevectorEstimator
-from qiskit.circuit.library import efficient_su2
+from qiskit.circuit.library import efficient_su2, TwoLocal
 from qiskit import QuantumCircuit
 import numpy as np
 import sys
@@ -8,10 +8,11 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"
 
 from Utils import store_vqe, load
 from VQEBase import VQEExtended
-
+from Gates import U3TwoQubit, UniversalTwoQubit
+from qiskit_algorithms.optimizers import L_BFGS_B
 
 # Data
-vqe_file = "../data/aevqe_data_HH.json"
+vqe_file = "../data/aevqe_data_HH_tests.json"
 qae_file = "../data/QAE_HH.json"
 base = 4
 target = 3
@@ -23,6 +24,10 @@ acc = [d["accuracy"] for d in qae_data]
 qae_parameters = qae_data[acc.index(min(acc))]["parameters"]
 print("QAE error :", min(acc))
 
+#__________________________________________________#
+
+
+"""
 # Define ae-vqe ansatz
 reps = 3
 encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
@@ -42,5 +47,32 @@ atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
 result = vqe.run_parallel(atoms, estimator=estimator)
 
 data = {compression:{"EfficientSU2-{}".format(reps):{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
+
+store_vqe(vqe_file, data)
+"""
+#__________________________________________________#
+
+# Define a different ae-vqe ansatz
+reps = 1
+encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
+
+VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks="u",
+entanglement_blocks=U3TwoQubit(), entanglement='circular', reps=reps, name="TwoLocalU3")
+
+ansatz = QuantumCircuit(base)
+ansatz.append(VQE_ansatz, range(target))
+ansatz.append(encoder.inverse(), range(base))
+
+vqe = VQEExtended(ansatz=ansatz)
+estimator = StatevectorEstimator()
+
+num_points = 500
+
+# Should take about 1-2 minutes.
+atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
+result = vqe.run_parallel(atoms, estimator=estimator, optimizer=L_BFGS_B())
+
+data = {compression:{"{}-{}".format(VQE_ansatz.name, reps):{"points":atoms, "energy":result['energy'],
+ 'parameters':result['parameters']}}}
 
 store_vqe(vqe_file, data)

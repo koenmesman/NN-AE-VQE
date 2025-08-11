@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"
 
 from QAE import QAE
 from VQEBase import VQEExtended
-from Utils import load, get_distance
+from Utils import load, to_distance
 
 
 

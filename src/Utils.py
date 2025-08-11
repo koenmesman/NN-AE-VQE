@@ -4,28 +4,6 @@
 import numpy as np
 import json
 import re
-"""
-def store(filename, data):
-    try:
-        with open(filename, "r+") as file:
-            filedata = json.load(file)
-            for k in data.keys():
-                if k in filedata:
-                    filedata[k].append(data[k][0])
-                else:
-                    filedata[k] = [data[k][0]]
-            
-            file.seek(0)
-            json.dump(filedata, file)
-            file.truncate()
-
-    except Exception as error:
-        print("writing new file for data", error)
-        with open(filename, "w") as file:
-            for k in data.keys():
-                data[k] = [data[k][0]]
-            json.dump(data, file)
-"""
 
 def store_vqe(filename, data):
     """
