@@ -70,6 +70,13 @@ def merge_flat(dst: MutableMapping[str, Dict[str, Any]],
             else:
                 dst_payload["energy"] = _copy_shallow_list(ene)
 
+        if "evaluations" in payload:
+            ene = payload["evaluations"]
+            if "evaluations" in dst_payload:
+                dst_payload["evaluations"].extend(ene)
+            else:
+                dst_payload["evaluations"] = _copy_shallow_list(ene)
+
         if "parameters" in payload:
             pars = payload["parameters"]
             if "parameters" in dst_payload:
@@ -111,6 +118,13 @@ def merge_nested(dst: Nested, src: Mapping[str, Mapping[str, Mapping[str, Any]]]
                 else:
                     dst_payload["energy"] = _copy_shallow_list(nb)
 
+            if "evaluations" in payload:
+                ene = payload["evaluations"]
+                if "evaluations" in dst_payload:
+                    dst_payload["evaluations"].extend(ene)
+                else:
+                    dst_payload["evaluations"] = _copy_shallow_list(ene)
+                    
             if "parameters" in payload:
                 nc = _normalize_c(payload["parameters"])
                 if "parameters" in dst_payload:

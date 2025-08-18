@@ -175,11 +175,13 @@ class VQEExtended:
         # Compute result
         vqe_result = self.vqe.compute_minimum_eigenvalue(self.hamiltonian)
         parameters = list(vqe_result.optimal_parameters.values())
+        evaluations = vqe_result.cost_function_evals
         self.bound_vqe = self.vqe.ansatz.assign_parameters(parameters)
 
         return {
             "energy": vqe_result.optimal_value,
-            "parameters": parameters
+            "parameters": parameters,
+            "evaluations": evaluations
         }
 
     def _single_vqe(self, atom_config):
@@ -202,7 +204,7 @@ class VQEExtended:
         vqe_result = _vqe.compute_minimum_eigenvalue(hamiltonian)
         parameters = list(vqe_result.optimal_parameters.values())
 
-        return vqe_result.optimal_value, parameters
+        return vqe_result.optimal_value, parameters, vqe_result.cost_function_evals
 
     def run_parallel(self,
                 atom_configs: list[str],
@@ -233,14 +235,17 @@ class VQEExtended:
             # Aggregate into lists
             energies = []
             parameters_list = []
+            evaluations = []
 
-            for energy, params in results:
+            for energy, params, evals in results:
                 energies.append(energy)
                 parameters_list.append(params)
+                evaluations.append(evals)
 
             return {
                 "energy": energies,
-                "parameters": parameters_list
+                "parameters": parameters_list,
+                "evaluations": evaluations
             }
 
     def _update_bounds(self, old, current):
@@ -263,25 +268,30 @@ class VQEExtended:
 
         energies = []
         parameters = []
+        evaluations = []
 
         for i in range(2):
-            energy, param = self._single_vqe(atom_configs[i])
+            energy, param, evals = self._single_vqe(atom_configs[i])
             energies.append(energy)
             parameters.append(param)
+            evaluations.append(evals)
+
         self._update_bounds(parameters[0], parameters[1])
         self.init_parameters = parameters[1]
 
         for atom in atom_configs[2:]:
-            energy, param = self._single_vqe(atom)
+            energy, param, evals = self._single_vqe(atom)
             energies.append(energy)
             parameters.append(param)
+            evaluations.append(evals)
 
             self._update_bounds(self.init_parameters, param)
             self.init_parameters = param
 
         return {
             "energy": energies,
-            "parameters": parameters
+            "parameters": parameters,
+            "evaluations": evaluations
         }
 
     def assign_parameters(self, atom_config, parameters):
@@ -318,11 +328,13 @@ class VQEExtended:
 
             energies = []
             parameters = []
-
+            evaluations = []
             for i in range(2):
-                energy, param = self._single_vqe(atom_configs[i])
+                energy, param, evals = self._single_vqe(atom_configs[i])
                 energies.append(energy)
                 parameters.append(param)
+                evaluations.append(evals)
+
             self._update_bounds(parameters[0], parameters[1])
             self.init_parameters = parameters[1]
 
@@ -330,6 +342,7 @@ class VQEExtended:
 
             energies = []
             parameters = []
+            evaluations = []
 
             while remaining_configs:
                 print("Points remaining:", len(remaining_configs))
@@ -340,9 +353,10 @@ class VQEExtended:
                     results = pool.map(single_vqe, [[a, self.init_parameters, self.ansatz, self.mapper] for a in atom_batch])
                     results = [float(r) for r in results]
 
-                for energy, params in results:
+                for energy, params, evals in results:
                     energies.append(energy)
                     parameters.append(params)
+                    evaluations.append(evals)
 
                 batch_params = np.array(results[1]).transpose()
                 average_parameters = [sum(p)/len(p) for p in batch_params]
@@ -354,5 +368,6 @@ class VQEExtended:
 
             return {
                 "energy": energies,
-                "parameters": parameters
+                "parameters": parameters,
+                "evaluations": evaluations
             }

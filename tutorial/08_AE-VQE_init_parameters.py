@@ -55,6 +55,7 @@ init_parameters = old_results["parameters"][errors.index(min(errors))]
 atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
 result = vqe.run_parallel(atoms, estimator=estimator, init_parameters=init_parameters, optimizer=L_BFGS_B())
 
-data = {compression:{f"{VQE_ansatz.name}-{reps}-init":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
+data = {compression:{f"{VQE_ansatz.name}-{reps}-init":{"points":atoms,
+ "energy":result['energy'], 'parameters':result['parameters'], "evaluations":result["evaluations"]}}}
 
 store_aevqe(vqe_file, data)

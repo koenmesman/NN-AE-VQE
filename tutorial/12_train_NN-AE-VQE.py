@@ -12,34 +12,36 @@ from VQEBase import VQEExtended
 from Gates import U3TwoQubit, UniversalTwoQubit
 
 # Data
-exect_file = "../data/exect_data.json"
-aevqe_file = "../data/aevqe_data_HH_tests.json"
+exect_file = "../data/exact_data.json"
+aevqe_file = "../data/aevqe_data_HH_big.json"
 base = 4
 target = 3
-reps=1
+reps=2
 
 compression = "{}_{}".format(base, target)
-ansatz = "TwoLocalUniversalU3_circ-{}-grad".format(reps)
+ansatz = "rxry_cx_circ-{}-grad".format(reps)
 
-exact_data = load(exect_file)["exact"]
-exact_e = exact_data["energy"][0]
+
+# skip the first point, as it it noise
+exact_data = load(exect_file)["exact"][1:]
+exact_e = exact_data["energy"][1:]
 aevqe_data = load(aevqe_file)[compression][ansatz]
-ref_energies = aevqe_data["energy"]
-aevqe_par = aevqe_data["parameters"]
-configs = aevqe_data['points']
+ref_energies = aevqe_data["energy"][1:]
+aevqe_par = aevqe_data["parameters"][1:]
+configs = aevqe_data['points'][1:]
 
 points = [to_distance(c) for c in configs]
 
 # Get neural network predictions
 hparams = {
-        "NUM_UNITS": 64,
-        "NUM_LAYERS": 6,
+        "NUM_UNITS": 32,
+        "NUM_LAYERS": 4,
         "DROPOUT": 0.05,
         "VALIDATE_SPLIT": 0.3,
-        "EPOCHS": 200,
+        "EPOCHS": 400,
         "LEARNING_RATE": 1e-3,
         "BATCH_SIZE": 32,
-        "PATIENCE": 500,  # Recommended: ≈ EPOCHS/4 for small datasets, EPOCHS/10 for large datasets
+        "PATIENCE": 50,  # Recommended: ≈ EPOCHS/4 for small datasets, EPOCHS/10 for large datasets
     }
 
 checkpoint_path = "../data/training_01.ckpt"
@@ -80,8 +82,8 @@ qae_parameters = qae_data[acc.index(min(acc))]["parameters"]
 
 encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
 
-VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks="u",
-entanglement_blocks=U3TwoQubit(), entanglement='circular', reps=reps, name="TwoLocalU3")
+VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks=["rx", "ry"],
+entanglement_blocks="cx", entanglement='circular', reps=reps, name="rxry_cx_circ")
 
 ansatz = QuantumCircuit(base)
 ansatz.append(VQE_ansatz, range(target))

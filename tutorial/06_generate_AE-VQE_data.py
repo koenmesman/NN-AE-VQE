@@ -64,13 +64,13 @@ ansatz.append(encoder.inverse(), range(base))
 vqe = VQEExtended(ansatz=ansatz)
 estimator = StatevectorEstimator()
 
-num_points = 80
+num_points = 20
 
 # Should take about 1-2 minutes.
 atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
 result = vqe.run_parallel(atoms, estimator=estimator, optimizer=L_BFGS_B())
 
 data = {compression:{"{}-{}".format(VQE_ansatz.name, reps):{"points":atoms, "energy":result['energy'],
- 'parameters':result['parameters']}}}
+ 'parameters':result['parameters'], "evaluations":result["evaluations"]}}}
 
 store_aevqe(vqe_file, data)

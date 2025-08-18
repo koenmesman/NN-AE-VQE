@@ -11,3 +11,4 @@ tutorial/training_logs/history.json
 data/*png
 tutorial/debug.py
 data/aevqe_data_HH_1000 (copy).json
+data/aevqe_data_HH_big (copy).json

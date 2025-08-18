@@ -3,12 +3,14 @@ from Utils import load, store_aevqe
 
 import copy
 
-data = load("../data/aevqe_data_HH_big.json")
-print(data["4_3"]['rxry_cx_circ-2'].keys())
+data = load("../data/exact_data.json")
+print(len(data["exact"]["points"]))
 
 
-#new_data = copy.copy(data)
-#new_data["4_3"]["rxry_cx_circ-2"] = data["4_3"]["rxry_cx_circ-2"][0]
-#print(len(new_data["4_3"]["rxry_cx_circ-2-grad"])) 
+new_data = copy.copy(data)
+data["exact"]["points"] = data["exact"]["points"][0]
+data["exact"]["energy"] = data["exact"]["energy"][0]
 
-#store_aevqe("../data/aevqe_data_HH_1000_fix.json", new_data)
+print(len(data["exact"]["points"]))
+
+store_aevqe("../data/exact_data_fix.json", new_data)

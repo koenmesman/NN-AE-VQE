@@ -8,7 +8,7 @@ from Utils import store_vqe
 
 from qiskit.primitives import Estimator, StatevectorEstimator
 
-vqe_file = "../data/vqe_data_HH_20.json"
+vqe_file = "../data/vqe_data_HH_20_test.json"
 
 num_points = 20
 
@@ -28,6 +28,3 @@ for i in np.linspace(0.2, 3, num_points):
 
     data = {"VQE-UCCSD":{"points":atom, "energy":result['energy'], 'parameters':result['parameters']}}
     store_vqe(vqe_file, data)
-    
-    
-
