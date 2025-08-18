@@ -10,12 +10,18 @@ from tensorflow import keras
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
-print(keras.version)
+try:
+    # Keras 3.x (Colab default)
+    from keras.utils import register_keras_serializable
+except ImportError:
+    # Older tf.keras (TF 2.13 and below)
+    from tensorflow.keras.saving import register_keras_serializable
+
 
 def flatten_chain(matrix):
     return list(chain.from_iterable(matrix))
 
-@keras.saving.register_keras_serializable()
+@register_keras_serializable()
 def unit_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     """Loss based on cosine-sine distance for angles in radians."""
     y_true = tf.multiply(y_true, np.pi * 2)
@@ -27,7 +33,7 @@ def unit_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     squared_dist = tf.square(cos_t - cos_p) + tf.square(sin_t - sin_p)
     return tf.reduce_mean(squared_dist)
 
-@keras.saving.register_keras_serializable()
+@register_keras_serializable()
 def huber_unit_loss(y_true, y_pred, delta=1.0):
     """
     Huber version of unit_loss for angles in [0,1] (scaled from [0, 2π]).
@@ -83,7 +89,7 @@ class NeuralNetwork:
         self.output_shape: int = 1
         tf.config.run_functions_eagerly(True)
 
-    @keras.saving.register_keras_serializable()
+    @register_keras_serializable()
     def normalize(self, params: Sequence[Sequence[float]]) -> np.ndarray:
         """
         Normalize angles in [0, 2π] to [0, 1] range without altering the shape.
