@@ -59,12 +59,30 @@ def run_estimator(config):#:tuple[str, list[float]]):
     atom_config, parameters, ansatz, mapper = config
     atom, hamiltonian = set_atom(atom_config, mapper)
     estimator = StatevectorEstimator()
-    #bound_circ = ansatz.assign_parameters(parameters)
-    #print("!", bound_circ)
 
     pub = (ansatz, hamiltonian, parameters)
     est = estimator.run([pub])
     return est.result()[0].data.evs
+
+def single_vqe(self, config):
+    """
+    Function to be used for running multiple vqe runs in parallel.
+    """
+
+    atom_config, init_parameters, ansatz, mapper = config
+    estimator = StatevectorEstimator()
+
+    atom, hamiltonian, ansatz = set_atom(atom_config, mapper)
+
+    # Setup VQE
+    _vqe = VQE(ansatz=ansatz, optimizer=COBYLA(), estimator=estimator)
+    _vqe.initial_point = init_parameters
+
+    # Compute result
+    vqe_result = _vqe.compute_minimum_eigenvalue(hamiltonian)
+    parameters = list(vqe_result.optimal_parameters.values())
+
+    return vqe_result, parameters
 
 class VQEExtended:
     """
@@ -288,3 +306,53 @@ class VQEExtended:
         else:
             results = self._run_estimator((atom_config, parameters))
         return results
+
+    def run_constrained_parallel(self, atom_configs, estimator: BaseEstimatorV2, alpha=1, beta=0.2,
+                    backend_options: dict = None, init_parameters=None, optimizer=COBYLA(), batch=10):
+            
+            self.optimizer = optimizer
+            self.estimator = estimator
+            self.init_parameters = init_parameters
+            self.alpha = alpha
+            self.beta = beta
+
+            energies = []
+            parameters = []
+
+            for i in range(2):
+                energy, param = self._single_vqe(atom_configs[i])
+                energies.append(energy)
+                parameters.append(param)
+            self._update_bounds(parameters[0], parameters[1])
+            self.init_parameters = parameters[1]
+
+            remaining_configs = atom_configs[2:]
+
+            energies = []
+            parameters = []
+
+            while remaining_configs:
+                print("Points remaining:", len(remaining_configs))
+
+                atom_batch = remaining_configs[:batch]
+
+                with Pool() as pool:
+                    results = pool.map(single_vqe, [[a, self.init_parameters, self.ansatz, self.mapper] for a in atom_batch])
+                    results = [float(r) for r in results]
+
+                for energy, params in results:
+                    energies.append(energy)
+                    parameters.append(params)
+
+                batch_params = np.array(results[1]).transpose()
+                average_parameters = [sum(p)/len(p) for p in batch_params]
+
+                self._update_bounds(self.init_parameters, average_parameters)
+                self.init_parameters = average_parameters
+
+                del remaining_configs[:batch]
+
+            return {
+                "energy": energies,
+                "parameters": parameters
+            }

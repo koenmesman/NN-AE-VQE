@@ -34,7 +34,7 @@ reps = 1
 
 encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
 VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks="u",
-entanglement_blocks=U3TwoQubit(), entanglement='circular', reps=reps, name="TwoLocalU3")
+entanglement_blocks=U3TwoQubit(), entanglement='circular', reps=reps, name="TwoLocalUniversalU3_circ")
 
 ansatz = QuantumCircuit(base)
 ansatz.append(VQE_ansatz, range(target))
@@ -46,7 +46,7 @@ estimator = StatevectorEstimator()
 num_points = 500
 
 # Get best previous parameters as new initial parameters
-old_results = load(vqe_file)[compression][f"TwoLocalU3-{reps}"][0]
+old_results = load(vqe_file)[compression][f"{VQE_ansatz.name}-{reps}"]
 errors = [abs(ae - ref) for ae, ref in zip(old_results["energy"], ref_data["energy"])]
 init_parameters = old_results["parameters"][errors.index(min(errors))]
 
@@ -55,6 +55,6 @@ init_parameters = old_results["parameters"][errors.index(min(errors))]
 atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
 result = vqe.run_parallel(atoms, estimator=estimator, init_parameters=init_parameters, optimizer=L_BFGS_B())
 
-data = {compression:{f"TwoLocalU3-{reps}-init":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
+data = {compression:{f"{VQE_ansatz.name}-{reps}-init":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
 
-store_vqe(vqe_file, data)
+store_aevqe(vqe_file, data)

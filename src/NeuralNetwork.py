@@ -11,7 +11,6 @@ from keras import callbacks
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
-
 def flatten_chain(matrix):
     return list(chain.from_iterable(matrix))
 
@@ -27,12 +26,41 @@ def unit_loss(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     squared_dist = tf.square(cos_t - cos_p) + tf.square(sin_t - sin_p)
     return tf.reduce_mean(squared_dist)
 
+@keras.saving.register_keras_serializable()
+def huber_unit_loss(y_true, y_pred, delta=1.0):
+    """
+    Huber version of unit_loss for angles in [0,1] (scaled from [0, 2π]).
+    
+    Args:
+        y_true, y_pred: tensors of shape (batch,) or (batch,1) with values in [0, 1]
+        delta: threshold between quadratic and linear loss zones (after mapping to sin/cos space)
+    """
+    # Convert scaled target/pred into radians
+    true_angle = y_true * 2.0 * np.pi
+    pred_angle = y_pred * 2.0 * np.pi
+
+    # Map to unit circle representation
+    true_unit = tf.stack([tf.cos(true_angle), tf.sin(true_angle)], axis=-1)
+    pred_unit = tf.stack([tf.cos(pred_angle), tf.sin(pred_angle)], axis=-1)
+
+    # Compute Huber loss between vectors
+    error = pred_unit - true_unit
+    abs_error = tf.abs(error)
+    
+    quadratic = 0.5 * tf.square(error)
+    linear = delta * (abs_error - 0.5 * delta)
+    
+    huber_per_dim = tf.where(abs_error <= delta, quadratic, linear)
+    
+    # Mean over vector dimensions, then mean over batch
+    return tf.reduce_mean(tf.reduce_mean(huber_per_dim, axis=-1))
+
 class NeuralNetwork:
     DEFAULT_HPARAMS: Dict[str, Any] = {
         "NUM_UNITS": 30,
         "NUM_LAYERS": 1,
         "DROPOUT": 0.3,
-        "LOSS": unit_loss,
+        "LOSS": huber_unit_loss,
         "OPTIMIZER": "adam",
         "VALIDATE_SPLIT": 0.2,
         "EPOCHS": 200,
@@ -135,7 +163,8 @@ class NeuralNetwork:
             decay_steps=10000,
             decay_rate=0.96,
         )
-        optimizer = keras.optimizers.Adam(learning_rate=learning_rate_schedule)
+        #optimizer = keras.optimizers.Adam(learning_rate=learning_rate_schedule)
+        optimizer = keras.optimizers.AdamW(learning_rate=learning_rate_schedule, weight_decay=2e-4)
 
         self.model.compile(
             optimizer=optimizer,
@@ -191,7 +220,7 @@ class NeuralNetwork:
         x = copy.deepcopy(x_in)
         y = copy.deepcopy(y_in)
         y = self.normalize(y)
-
+        
         # Use sklearn train_test_split for consistent coverage
         x_train, x_val, y_train, y_val = train_test_split(
             np.array(x),
@@ -200,6 +229,8 @@ class NeuralNetwork:
             random_state=seed,
             shuffle=True,
         )
+        
+
 
         x_width = x_val.shape[1] if x_val.ndim > 1 else 1
         self.input_shape = (None, x_width)
@@ -226,3 +257,67 @@ class NeuralNetwork:
 
     def load_model(self, filepath: str) -> None:
         self.model = tf.keras.models.load_model(filepath)
+
+
+    def _uniformize_angles(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        n_bins: int = 180,
+        mode: str = "oversample",   # or "downsample"
+        min_per_bin: int | None = None,
+        max_per_bin: int | None = None,
+        seed: int = 42,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Make the target angle distribution y ~ Uniform[0,1] by resampling.
+        Assumes y is shape (N, 1) scaled to [0,1] (i.e., angle / (2π)).
+
+        - mode="oversample": replicate scarce angles to match dense bins.
+        - mode="downsample": drop from dense bins to match scarce bins.
+        """
+        rng = np.random.default_rng(seed)
+
+        y1 = y.reshape(-1)  # (N,)
+        # Guard: keep values in [0,1]
+        y1 = np.clip(y1, 0.0, 1.0)
+        bins = np.linspace(0.0, 1.0, n_bins + 1, endpoint=True)
+        which_bin = np.digitize(y1, bins) - 1
+        which_bin = np.clip(which_bin, 0, n_bins - 1)
+
+        # collect indices per bin
+        idx_per_bin = [np.where(which_bin == b)[0] for b in range(n_bins)]
+        counts = np.array([len(ix) for ix in idx_per_bin])
+
+        # decide target count per bin
+        if mode == "oversample":
+            target = counts.max() if max_per_bin is None else min(max_per_bin, counts.max())
+        elif mode == "downsample":
+            nz = counts[counts > 0]
+            target = (nz.min() if nz.size > 0 else 0)
+            if min_per_bin is not None:
+                target = max(target, min_per_bin)
+        else:
+            raise ValueError("mode must be 'oversample' or 'downsample'")
+
+        # sample indices
+        chosen = []
+        for ix in idx_per_bin:
+            if len(ix) == 0:
+                continue
+            if mode == "oversample":
+                k = target
+                draw = rng.choice(ix, size=k, replace=True)
+            else:  # downsample
+                k = min(target, len(ix))
+                draw = rng.choice(ix, size=k, replace=False)
+            chosen.append(draw)
+
+        if not chosen:
+            # fallback: return originals if something went wrong
+            return x, y
+
+        chosen = np.concatenate(chosen, axis=0)
+        rng.shuffle(chosen)
+
+        return x[chosen], y[chosen]

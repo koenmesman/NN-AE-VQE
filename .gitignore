@@ -1,0 +1,10 @@
+# Logs
+[Ll]og/
+[Ll]ogs/
+training_logs/
+*.ckpt.*
+checkpoint
+*.h5
+[Tt]raining_logs/
+tutorial/training_logs/cp.weights.h5
+tutorial/training_logs/history.json

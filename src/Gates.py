@@ -109,3 +109,38 @@ class U3TwoQubit(Gate):
         qc.cx(1, 0)
 
         self.definition = qc
+
+class ZZ(Gate):
+    """
+    A custom gate that applies:
+        CX(i, j)
+        rz(theta[0], j)
+        CX(i, j)
+
+    """
+
+    def __init__(self, thetas=None, label=None):
+        """
+        Args:
+            thetas: List of parameters [theta0, theta1]. If None, creates parameters automatically.
+            label: Optional label for the gate.
+        """
+        if thetas is None:
+            thetas = ParameterVector("theta", 1)
+        super().__init__("Custom2Q", num_qubits=2, params=thetas, label=label)
+
+    @property
+    def parameter_bounds(self):
+        return [(0, 2 * pi), (0, 2 * pi), (0, 2 * pi)]
+
+    def _define(self):
+        """
+        Defines the internal decomposition of the custom gate.
+        """
+        theta_iter = iter(self.params)
+        qc = QuantumCircuit(2)
+        qc.cx(0, 1)
+        qc.rz(next(theta_iter), 1)
+        qc.cx(1, 0)
+
+        self.definition = qc

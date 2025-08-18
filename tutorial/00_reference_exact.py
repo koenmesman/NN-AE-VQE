@@ -8,26 +8,23 @@ from Utils import store_vqe
 
 from qiskit.primitives import Estimator, StatevectorEstimator
 
-vqe_file = "../data/vqe_data_HH_20.json"
+vqe_file = "../data/exect_data.json"
 
-num_points = 20
-
+num_points = 1000
+atoms = []
+energies = []
 for i in np.linspace(0.2, 3, num_points):
     print("point: {}/3".format(i))
     atom = "H 0 0 0; H 0 0 {}".format(i)
 
     vqe = VQEExtended()
     result = vqe.run_exact(atom)
+    atoms.append(atom)
+    energies.append(result)
     print("Exact diagonalization result:", result)
-    data = {"exact":{"points":atom, "energy":result}}
-    store_vqe(vqe_file, data)
-    
-    estimator = StatevectorEstimator()
-    result = vqe.run(atom, estimator=estimator)
-    print("Statevector estimator result:", result['energy'])
+data = {"exact":{"points":atoms, "energy":energies}}
+store_vqe(vqe_file, data)
 
-    data = {"VQE-UCCSD":{"points":atom, "energy":result['energy'], 'parameters':result['parameters']}}
-    store_vqe(vqe_file, data)
     
     
 

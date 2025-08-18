@@ -1,30 +1,29 @@
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+import __init__
 
-from Utils import load, to_distance
+from Utils import load, to_distance, rmse
 import matplotlib.pyplot as plt
 
 # Data
-aevqe_file = "../data/aevqe_data_HH.json"
-vqe_file = "../data/vqe_data_HH.json"
+aevqe_file = "../data/aevqe_data_HH_20.json"
+vqe_file = "../data/vqe_data_HH_20.json"
 base = 4
 target = 3
 reps=2
 
 compression = "{}_{}".format(base, target)
-ansatz = "TwoLocalU3-{}".format(reps)
+ansatz = "rxry_cx_pair-{}".format(reps)
 
 vqe_data = load(vqe_file)["exact"]
-aevqe_data = load(aevqe_file)
-aevqe_data = aevqe_data[compression][ansatz][0]
+aevqe_data = load(aevqe_file)[compression]
+aevqe_data = aevqe_data[ansatz]
 vqe_e = vqe_data["energy"]
 aevqe_e = aevqe_data["energy"]
 configs = aevqe_data['points']
-
+print(len(aevqe_data['parameters'][0]))
 points = [to_distance(c) for c in configs]
 
 error = [abs(enc-ref) for enc, ref in zip(aevqe_e, vqe_e)]
+print(rmse(error))
 chem_acc = [0.0015]*len(points)
 
 # Plot errors
