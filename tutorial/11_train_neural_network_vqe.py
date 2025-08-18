@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import __init__
-#from NeuralNetwork import NeuralNetwork
+from NeuralNetwork import NeuralNetwork
 from Utils import load, to_distance
-
+"""
 # Data
 vqe_file = "../data/vqe_data_HH_tests.json"
 
@@ -21,3 +21,4 @@ for par in vqe_par_transpose:
 plt.show()
 
 #nn = NeuralNetwork()
+"""

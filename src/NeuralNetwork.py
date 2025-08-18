@@ -7,9 +7,10 @@ import numpy as np
 import tensorflow as tf
 from itertools import chain
 from tensorflow import keras
-from keras import callbacks
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+
+print(keras.version)
 
 def flatten_chain(matrix):
     return list(chain.from_iterable(matrix))
@@ -152,7 +153,7 @@ class NeuralNetwork:
         cp_callback = keras.callbacks.ModelCheckpoint(
             filepath="training_logs/cp.weights.h5", save_weights_only=True, verbose=1
         )
-        early_stopping = callbacks.EarlyStopping(
+        early_stopping = keras.callbacks.EarlyStopping(
             monitor="val_loss",
             mode="min",
             patience=self.hparams["PATIENCE"],
