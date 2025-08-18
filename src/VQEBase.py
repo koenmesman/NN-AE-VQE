@@ -144,7 +144,7 @@ class VQEExtended:
         solver = NumPyMinimumEigensolver()
         calc = GroundStateEigensolver(self.mapper, solver)
         result = calc.solve(self.atom.problem)
-        return result.groundenergy
+        return float(result.groundenergy)
 
     def run(self,
             atom_config: str,

@@ -19,12 +19,12 @@ for i in np.linspace(0.2, 3, num_points):
     vqe = VQEExtended()
     result = vqe.run_exact(atom)
     print("Exact diagonalization result:", result)
-    data = {"exact":{"points":atom, "energy":result}}
+    data = {"exact":{"points":[atom], "energy":[result]}}
     store_vqe(vqe_file, data)
     
     estimator = StatevectorEstimator()
     result = vqe.run(atom, estimator=estimator)
     print("Statevector estimator result:", result['energy'])
 
-    data = {"VQE-UCCSD":{"points":atom, "energy":result['energy'], 'parameters':result['parameters']}}
+    data = {"VQE-UCCSD":{"points":[atom], "energy":[result['energy']], 'parameters':[result['parameters']]}}
     store_vqe(vqe_file, data)

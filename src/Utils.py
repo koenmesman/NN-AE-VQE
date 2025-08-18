@@ -144,8 +144,10 @@ def store_vqe(filename, data):
     try:
         with open(filename, "r+") as file:
             filedata = json.load(file)
+            #print(filedata)
             merge_flat(dst=filedata, src=data)
-            
+            #print(filedata)
+
             file.seek(0)
             json.dump(filedata, file)
             file.truncate()
@@ -155,7 +157,7 @@ def store_vqe(filename, data):
                 result_type = list(data.keys())[0]
                 for k in data[result_type].keys():
                     if type(k) is not dict:
-                        data[result_type][k] = [data[result_type][k]]
+                        data[result_type][k] = data[result_type][k]
                     else: 
                         data[result_type][k] = data[result_type][k]
                 json.dump(data, file)
