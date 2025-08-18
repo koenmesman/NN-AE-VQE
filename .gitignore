@@ -8,3 +8,6 @@ checkpoint
 [Tt]raining_logs/
 tutorial/training_logs/cp.weights.h5
 tutorial/training_logs/history.json
+data/*png
+tutorial/debug.py
+data/aevqe_data_HH_1000 (copy).json

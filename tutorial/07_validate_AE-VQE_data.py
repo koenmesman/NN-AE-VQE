@@ -1,26 +1,32 @@
 import __init__
 
-from Utils import load, to_distance, rmse
+from Utils import load, to_distance, rmse, sample_data
 import matplotlib.pyplot as plt
 
 # Data
-aevqe_file = "../data/aevqe_data_HH_20.json"
-vqe_file = "../data/vqe_data_HH_20.json"
+aevqe_file = "../data/aevqe_data_HH_1000.json"
+vqe_file = "../data/vqe_data_HH.json"
 base = 4
 target = 3
 reps=2
 
 compression = "{}_{}".format(base, target)
-ansatz = "rxry_cx_pair-{}".format(reps)
+ansatz = "rxry_cx_circ-{}-grad".format(reps)
 
 vqe_data = load(vqe_file)["exact"]
+ref_configs = vqe_data["points"]
+print(len(ref_configs))
+
 aevqe_data = load(aevqe_file)[compression]
 aevqe_data = aevqe_data[ansatz]
 vqe_e = vqe_data["energy"]
 aevqe_e = aevqe_data["energy"]
 configs = aevqe_data['points']
-print(len(aevqe_data['parameters'][0]))
 points = [to_distance(c) for c in configs]
+
+ref_d, vqe_d = sample_data(10, [ref_configs, vqe_e], [configs, points, aevqe_e])
+ref_configs, vqe_e = ref_d
+configs, points, aevqe_e = vqe_d
 
 error = [abs(enc-ref) for enc, ref in zip(aevqe_e, vqe_e)]
 print(rmse(error))

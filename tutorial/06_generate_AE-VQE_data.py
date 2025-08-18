@@ -2,17 +2,15 @@ from qiskit.primitives import Estimator, StatevectorEstimator
 from qiskit.circuit.library import efficient_su2, TwoLocal
 from qiskit import QuantumCircuit
 import numpy as np
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
+import __init__
 from Utils import store_vqe, load, store_aevqe
 from VQEBase import VQEExtended
 from Gates import U3TwoQubit, UniversalTwoQubit, ZZ
 from qiskit_algorithms.optimizers import L_BFGS_B
 
 # Data
-vqe_file = "../data/aevqe_data_HH_debug.json"
+vqe_file = "../data/aevqe_data_HH_big.json"
 qae_file = "../data/QAE_HH.json"
 base = 4
 target = 3
@@ -53,7 +51,7 @@ store_vqe(vqe_file, data)
 #__________________________________________________#
 
 # Define a different ae-vqe ansatz
-reps = 1
+reps = 2
 encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
 
 VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks=["rx", "ry"],
@@ -66,7 +64,7 @@ ansatz.append(encoder.inverse(), range(base))
 vqe = VQEExtended(ansatz=ansatz)
 estimator = StatevectorEstimator()
 
-num_points = 2
+num_points = 20
 
 # Should take about 1-2 minutes.
 atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]

@@ -9,13 +9,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src"
 
 from QAE import QAE
 from VQEBase import VQEExtended
-from Utils import load, to_distance
+from Utils import load, to_distance, sample_data
 
 
 
 # Data
 qae_file = "../data/QAE_HH.json"
-ref_file = "../data/vqe_data_HH.json"
+ref_file = "../data/vqe_data_HH_20.json"
 base = 4
 target = 3
 compression = "{}_{}".format(base, target)
@@ -30,8 +30,9 @@ print("QAE error :", min(acc))
 validation_data = load(ref_file)
 configs = validation_data['exact']['points']
 points = [to_distance(c) for c in configs]
-
 exact_energies = validation_data['exact']['energy']
+
+vqe_points = validation_data['VQE-UCCSD']['points']
 vqe_energies = validation_data['VQE-UCCSD']['energy']
 vqe_parameters = validation_data['VQE-UCCSD']['parameters']
 
@@ -43,6 +44,7 @@ encoder = ansatz.assign_parameters(qae_parameters)
 E_QAE = []
 E_repulsion = []
 estimator = Estimator()
+
 
 for p, vqe_param in zip(configs, vqe_parameters):
     vqe = VQEExtended()

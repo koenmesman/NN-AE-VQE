@@ -12,9 +12,9 @@ reps=2
 num_par = 10
 
 compression = "{}_{}".format(base, target)
-ansatz = "rxry_cx_circ-{}".format(reps)
+ansatz = "rxry_cx_circ-{}-grad".format(reps)
 
-aevqe_data = load(aevqe_file)[compression][ansatz][0]
+aevqe_data = load(aevqe_file)[compression][ansatz]
 aevqe_par = aevqe_data["parameters"]
 configs = aevqe_data['points']
 print(len(configs))
