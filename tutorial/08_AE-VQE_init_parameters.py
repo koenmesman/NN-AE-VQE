@@ -6,14 +6,14 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
-from Utils import store_vqe, load
+from Utils import store_aevqe, load
 from VQEBase import VQEExtended
 from Gates import U3TwoQubit, UniversalTwoQubit
 from qiskit_algorithms.optimizers import L_BFGS_B
 
 # Data
-ref_file = "../data/vqe_data_HH_tests.json"
-vqe_file = "../data/aevqe_data_HH_tests.json"
+ref_file = "../data/vqe_data_HH_20.json"
+vqe_file = "../data/aevqe_data_HH_big.json"
 qae_file = "../data/QAE_HH.json"
 base = 4
 target = 3
@@ -28,13 +28,13 @@ qae_parameters = qae_data[acc.index(min(acc))]["parameters"]
 print("QAE error :", min(acc))
 
 # Define ae-vqe ansatz
-reps = 1
+reps = 2
 
 
 
 encoder = efficient_su2(base, reps=1).assign_parameters(qae_parameters)
-VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks="u",
-entanglement_blocks=U3TwoQubit(), entanglement='circular', reps=reps, name="TwoLocalUniversalU3_circ")
+VQE_ansatz = TwoLocal(num_qubits=target, rotation_blocks=["rx", "ry"],
+entanglement_blocks="cx", entanglement='circular', reps=reps, name="rxry_cx_circ")
 
 ansatz = QuantumCircuit(base)
 ansatz.append(VQE_ansatz, range(target))
@@ -43,7 +43,7 @@ ansatz.append(encoder.inverse(), range(base))
 vqe = VQEExtended(ansatz=ansatz)
 estimator = StatevectorEstimator()
 
-num_points = 500
+num_points = 30
 
 # Get best previous parameters as new initial parameters
 old_results = load(vqe_file)[compression][f"{VQE_ansatz.name}-{reps}"]

@@ -36,7 +36,7 @@ hparams = {
         "NUM_LAYERS": 6,
         "DROPOUT": 0.05,
         "VALIDATE_SPLIT": 0.3,
-        "EPOCHS": 2000,
+        "EPOCHS": 200,
         "LEARNING_RATE": 1e-3,
         "BATCH_SIZE": 32,
         "PATIENCE": 500,  # Recommended: ≈ EPOCHS/4 for small datasets, EPOCHS/10 for large datasets

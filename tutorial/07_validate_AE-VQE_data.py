@@ -4,7 +4,7 @@ from Utils import load, to_distance, rmse, sample_data
 import matplotlib.pyplot as plt
 
 # Data
-aevqe_file = "../data/aevqe_data_HH_1000.json"
+aevqe_file = "../data/aevqe_data_HH_big.json"
 vqe_file = "../data/vqe_data_HH.json"
 base = 4
 target = 3
@@ -18,6 +18,7 @@ ref_configs = vqe_data["points"]
 print(len(ref_configs))
 
 aevqe_data = load(aevqe_file)[compression]
+print(aevqe_data.keys())
 aevqe_data = aevqe_data[ansatz]
 vqe_e = vqe_data["energy"]
 aevqe_e = aevqe_data["energy"]

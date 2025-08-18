@@ -10,8 +10,8 @@ from Gates import U3TwoQubit, UniversalTwoQubit
 
 
 # Data
-ref_file = "../data/vqe_data_HH_tests.json"
-vqe_file = "../data/aevqe_data_HH_1000.json"
+ref_file = "../data/vqe_data_HH.json"
+vqe_file = "../data/aevqe_data_HH_big.json"
 qae_file = "../data/QAE_HH.json"
 base = 4
 target = 3
@@ -43,7 +43,7 @@ estimator = StatevectorEstimator()
 num_points = 1000
 
 # Get best previous parameters as new initial parameters
-old_results = load(vqe_file)[compression][f"{VQE_ansatz.name}-{reps}"][0]
+old_results = load(vqe_file)[compression][f"{VQE_ansatz.name}-{reps}"]
 errors = [abs(ae - ref) for ae, ref in zip(old_results["energy"], ref_data["energy"])]
 init_parameters = old_results["parameters"][errors.index(min(errors))]
 
@@ -61,4 +61,4 @@ result = vqe.run_constrained(atoms, alpha=alpha, beta=beta, estimator=estimator,
 
 data = {compression:{f"{VQE_ansatz.name}-{reps}-grad":{"points":atoms, "energy":result['energy'], 'parameters':result['parameters']}}}
 
-store_vqe(vqe_file, data)
+store_aevqe(vqe_file, data)

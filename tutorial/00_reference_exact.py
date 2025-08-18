@@ -8,7 +8,7 @@ from Utils import store_vqe
 
 from qiskit.primitives import Estimator, StatevectorEstimator
 
-vqe_file = "../data/exect_data.json"
+vqe_file = "../data/exact_data.json"
 
 num_points = 1000
 atoms = []

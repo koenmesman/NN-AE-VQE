@@ -64,7 +64,7 @@ ansatz.append(encoder.inverse(), range(base))
 vqe = VQEExtended(ansatz=ansatz)
 estimator = StatevectorEstimator()
 
-num_points = 20
+num_points = 80
 
 # Should take about 1-2 minutes.
 atoms = [f"H 0 0 0; H 0 0 {i}" for i in np.linspace(0.2, 3, num_points)]
