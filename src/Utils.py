@@ -144,7 +144,7 @@ def store_vqe(filename, data):
     try:
         with open(filename, "r+") as file:
             filedata = json.load(file)
-            merge_flat
+            merge_flat(dst=filedata, src=data)
             
             file.seek(0)
             json.dump(filedata, file)
