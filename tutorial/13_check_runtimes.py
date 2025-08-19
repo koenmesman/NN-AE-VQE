@@ -102,21 +102,44 @@ import numpy as np
 def acc(d):
     return [abs(e-r) for e, r in zip(d, ref_e)]
 
+def dyn_err(d):
+    return [[np.percentile(data, 25), np.percentile(data, 75)] for data in d]
+
 data_time = [aevqe_runs, init_aevqe_runs, nn_evals]
 averages = [np.mean(d) for d in data_time]
 errors = [np.std(d) for d in data_time]
+err_min = [np.percentile(d, 25) for d in errors]
+err_max = [np.percentile(d, 75) for d in errors]
+err_dyn = [err_min, err_max]
+
 
 data_acc = [acc(d) for d in [aevqe_e, init_e, energies]]
 av_acc = [np.mean(d) for d in data_acc]
 err_acc = [np.std(d) for d in data_acc]
+err_acc_min = [np.percentile(d, 25) for d in data_acc]
+err_acc_max = [np.percentile(d, 75) for d in data_acc]
+err_acc_dyn = [err_acc_min, err_acc_max]
 
 labels = ["ae-vqe", "ae-vqe + init", "nn-ae-vqe"]
 x = np.arange(3)
 
-plt.bar(labels, averages)
-plt.errorbar(labels, averages, yerr=errors, fmt='o', color="c")
+fig = plt.figure() # Create matplotlib figure
 
-plt.bar(labels, av_acc, color="g", width=width1)
-plt.errorbar(x+width1, av_acc, yerr=err_acc, fmt='o', color="c")
+ax = fig.add_subplot(111) # Create matplotlib axes
+ax2 = ax.twinx()
+width1 = 0.4
 
+ax.bar(labels, averages, width=width1, label="evaluations")
+ax.errorbar(labels, averages, yerr=err_dyn, fmt='o', color="c")
+ax.set_ylabel("evaluations")
+ax2.bar(x+width1, av_acc, color="g", width=width1, label="error")
+ax2.errorbar(x+width1, av_acc, yerr=err_acc_dyn, fmt='o', color="c")
+ax2.set_ylabel("error")
+ax2.set_yscale("log")
+
+lines, labels = ax.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax2.legend(lines + lines2, labels + labels2, loc=0)
+
+#fig.legend()
 plt.show()

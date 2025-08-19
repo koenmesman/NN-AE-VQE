@@ -314,7 +314,7 @@ class VQEExtended:
                 results = pool.map(run_estimator, [[a, p, self.ansatz, self.mapper] for a, p in zip(atom_config, parameters)])
                 results = [float(r) for r in results]
         else:
-            results = self._run_estimator((atom_config, parameters))
+            results = run_estimator((atom_config, parameters))
         return results
 
     def run_constrained_parallel(self, atom_configs, estimator: BaseEstimatorV2, alpha=1, beta=0.2,
