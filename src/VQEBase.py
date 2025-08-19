@@ -150,7 +150,7 @@ class VQEExtended:
             atom_config: str,
             estimator: BaseEstimatorV2,
             backend_options: dict = None,
-            init_parameters=None,
+            init_parameters=[],
             optimizer=COBYLA()):
         """
         Run VQE with either a custom ansatz or default UCCSD.
@@ -210,7 +210,7 @@ class VQEExtended:
                 atom_configs: list[str],
                 estimator: BaseEstimatorV2,
                 backend_options: dict = None,
-                init_parameters=None,
+                init_parameters=[],
                 optimizer=COBYLA()):
             """
             Run VQE with either a custom ansatz or default UCCSD.
@@ -258,7 +258,7 @@ class VQEExtended:
         self.ansatz.parameter_bounds = [(x+delta-(self.alpha*abs(delta)+self.beta), x+delta+(self.alpha*abs(delta)+self.beta)) for x, delta in zip(current, deltas)]
 
     def run_constrained(self, atom_configs, estimator: BaseEstimatorV2, alpha=1, beta=0.2,
-                backend_options: dict = None, init_parameters=None, optimizer=COBYLA()):
+                backend_options: dict = None, init_parameters=[], optimizer=COBYLA()):
         
         self.optimizer = optimizer
         self.estimator = estimator
@@ -318,7 +318,7 @@ class VQEExtended:
         return results
 
     def run_constrained_parallel(self, atom_configs, estimator: BaseEstimatorV2, alpha=1, beta=0.2,
-                    backend_options: dict = None, init_parameters=None, optimizer=COBYLA(), batch=10):
+                    backend_options: dict = None, init_parameters=[], optimizer=COBYLA(), batch=10):
             
             self.optimizer = optimizer
             self.estimator = estimator
