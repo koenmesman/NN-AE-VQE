@@ -43,7 +43,7 @@ ansatz.append(encoder.inverse(), range(base))
 vqe = VQEExtended(ansatz=ansatz)
 estimator = StatevectorEstimator()
 
-num_points = 30
+num_points = 20
 
 # Get best previous parameters as new initial parameters
 old_results = load(vqe_file)[compression][f"{VQE_ansatz.name}-{reps}"]

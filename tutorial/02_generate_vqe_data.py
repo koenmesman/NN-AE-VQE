@@ -8,7 +8,7 @@ from Utils import store_vqe
 
 from qiskit.primitives import Estimator, StatevectorEstimator
 
-vqe_file = "../data/vqe_data_HH_20_test.json"
+vqe_file = "../data/vqe_data_HH_20_tests.json"
 
 num_points = 20
 
@@ -26,5 +26,6 @@ for i in np.linspace(0.2, 3, num_points):
     result = vqe.run(atom, estimator=estimator)
     print("Statevector estimator result:", result['energy'])
 
-    data = {"VQE-UCCSD":{"points":[atom], "energy":[result['energy']], 'parameters':[result['parameters']]}}
+    data = {"VQE-UCCSD":{"points":[atom], "energy":[result['energy']],
+     'parameters':[result['parameters']], "evaluations":[result["evaluations"]]}}
     store_vqe(vqe_file, data)

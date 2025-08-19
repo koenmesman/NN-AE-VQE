@@ -12,7 +12,7 @@ from VQEBase import VQEExtended
 from Gates import U3TwoQubit, UniversalTwoQubit
 
 # Data
-exect_file = "../data/exact_data.json"
+exact_file = "../data/exact_data.json"
 aevqe_file = "../data/aevqe_data_HH_big.json"
 base = 4
 target = 3
@@ -23,7 +23,7 @@ ansatz = "rxry_cx_circ-{}-grad".format(reps)
 
 
 # skip the first point, as it it noise
-exact_data = load(exect_file)["exact"][1:]
+exact_data = load(exact_file)["exact"]
 exact_e = exact_data["energy"][1:]
 aevqe_data = load(aevqe_file)[compression][ansatz]
 ref_energies = aevqe_data["energy"][1:]
