@@ -2,9 +2,8 @@ import __init__
 from Utils import load, store_aevqe
 
 import copy
-
-data = load("../data/vqe_data_HH_20_test.json")
-print(data["VQE-UCCSD"]["energy"])
+a  =[]
+print(any(a))
 
 """
 new_data = copy.copy(data)

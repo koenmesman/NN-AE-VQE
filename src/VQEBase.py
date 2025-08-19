@@ -168,7 +168,7 @@ class VQEExtended:
         self.vqe = VQE(ansatz=self.ansatz, optimizer=optimizer, estimator=estimator)
 
         # Initialize parameters
-        if not init_parameters.any():
+        if not (init_parametersany):
             init_parameters = self._init_parameters()
         self.vqe.initial_point = init_parameters
 
